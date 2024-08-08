@@ -96,6 +96,16 @@ impl From<&str> for Config {
                     .try_into()
                     .expect("Invalid position configuration!");
 
+                let rows: Option<i16> = match item.get("rows") {
+                    Some(value) => Some(value.as_integer().unwrap() as i16),
+                    _ => None,
+                };
+
+                let cols: Option<i16> = match item.get("cols") {
+                    Some(value) => Some(value.as_integer().unwrap() as i16),
+                    _ => None,
+                };
+
                 let size_value = item
                     .get("size")
                     .expect("Size of scratchpad is required!")
@@ -145,6 +155,8 @@ impl From<&str> for Config {
                     target,
                     position: position.into(),
                     size: size.into(),
+                    rows,
+                    cols,
                     launch_command,
                     launch_timeout,
                     scratchpad_space,

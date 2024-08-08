@@ -40,6 +40,8 @@ pub struct Scratchpad {
     pub target: Target,
     pub position: Coordinate,
     pub size: Coordinate,
+    pub rows: Option<i16>,
+    pub cols: Option<i16>,
     pub launch_command: LaunchOption,
     pub launch_timeout: u8,
     pub scratchpad_space: u8,
@@ -100,21 +102,45 @@ impl Scratchpad {
             &focused_space_id.to_string(),
         ])?;
 
-        // Move target window to target position
-        query_socket(&[
-            "window",
-            &window_id.to_string(),
-            "--move",
-            &self.position.to_string(),
-        ])?;
+        let set_with_grid = match (self.rows, self.cols) {
+            (None, Some(_)) => panic!("Columns can't be set without rows!"),
+            (Some(_), None) => panic!("Rows can't be set without columns!"),
+            (None, None) => false,
+            (Some(_), Some(_)) => true,
+        };
 
-        // Resize target window to target size
-        query_socket(&[
-            "window",
-            &window_id.to_string(),
-            "--resize",
-            &self.size.to_string(),
-        ])?;
+        if set_with_grid {
+            query_socket(&[
+                "window",
+                &window_id.to_string(),
+                "--grid",
+                &format!(
+                    "{}:{}:{}:{}:{}:{}",
+                    self.rows.unwrap(),
+                    self.cols.unwrap(),
+                    self.position.x,
+                    self.position.y,
+                    self.size.x,
+                    self.size.y,
+                ),
+            ])?;
+        } else {
+            // Move target window to target position
+            query_socket(&[
+                "window",
+                &window_id.to_string(),
+                "--move",
+                &self.position.to_string(),
+            ])?;
+
+            // Resize target window to target size
+            query_socket(&[
+                "window",
+                &window_id.to_string(),
+                "--resize",
+                &self.size.to_string(),
+            ])?;
+        }
 
         // Focus the target window
         query_socket(&["window", "--focus", &window_id.to_string()])?;
