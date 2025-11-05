@@ -76,23 +76,23 @@ impl Scratchpad {
         let target_window = target_window_opt.unwrap();
         let window_id = target_window.id;
 
-        // If window already has focus, send it to scratchpad workspace
-        if target_window.has_focus {
-            query_socket(&[
-                "window",
-                &window_id.to_string(),
-                "--space",
-                &self.scratchpad_space.to_string(),
-            ])?;
-            return Ok(());
+        // Set window to floating if it isn't and skip sending it away (first launch)
+        if !target_window.is_floating {
+            query_socket(&["window", &window_id.to_string(), "--toggle", "float"])?;
+        } else {
+            // If window already has focus, send it to scratchpad workspace
+            if target_window.has_focus {
+                query_socket(&[
+                    "window",
+                    &window_id.to_string(),
+                    "--space",
+                    &self.scratchpad_space.to_string(),
+                ])?;
+                return Ok(());
+            }
         }
 
         let focused_space_id = self.get_focused_space()?.unwrap().index;
-
-        // Set window to floating if it isn't
-        if !target_window.is_floating {
-            query_socket(&["window", &window_id.to_string(), "--toggle", "float"])?;
-        }
 
         // Move target window to focused space
         query_socket(&[
@@ -157,7 +157,7 @@ impl Scratchpad {
 
             LaunchOption::ApplicationWithArgs(application, args) => SysCommand::new("open")
                 .arg("-n")
-                .arg(format!("/Applications/{}", application))
+                .arg(application)
                 .arg("--args")
                 .args(args)
                 .spawn()?,
